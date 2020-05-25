@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import axios from "axios";
 import Display from "./Display";
+import { Button } from '@material-ui/core';
 
 export default class Axios extends Component {
   constructor(props) {
@@ -9,8 +10,9 @@ export default class Axios extends Component {
     this.state = {
       anime: [],
       search: "",
+      errorMessage: undefined
     };
-   // console.log("anime", this.state.anime);
+  
   }
 
   componentDidMount() {}
@@ -25,20 +27,39 @@ export default class Axios extends Component {
     event.preventDefault();
 
     axios
-      .get(
-        `https://api.jikan.moe/v3/search/anime?q=${this.state.search} ` || "[]"
-      )
-      .then((response) => {
-        console.log(response.data.results[0]);
-        this.setState({ anime: [response.data.results[0]] });
+    .get(
+      `https://api.jikan.moe/v3/search/anime?q=${this.state.search}` || "[]"
+    )
+    .then(response => {
+      //In our request we made sure that we are getting data we can use
+      //the api returns blank array sometimes so we gotta make sure there is something
+      // in it. We do this simply by checking length.
+      if (response.data.results.length < 1) {
+        //We will throw an error here to our catch
+        throw new Error("No anime found");
+      }
+      console.log(response.data.results);
+      this.setState({
+        anime: response.data.results
       });
+    })
+    .catch(err => {
+      //Our catch sets the error message in our state.
+      this.setState({
+        error: err.toString()
+      });
+    });
+      
   };
-
-  render() {
+  
+  
+  render() {  
     return (
       <div>
+      { this.state.errorMessage &&
+      <h3 > { this.state.errorMessage } </h3> }
         <div>
-          <form onSubmit={this.handleSubmit}>
+          <form >
             <input
               type="text"
               value={this.state.search}
@@ -46,11 +67,26 @@ export default class Axios extends Component {
               placeholder="search for anime here "
               name="search"
             />
-            <button> search </button>
+            <Button onClick={this.handleSubmit}
+            size='small' color='primary' variant='contained'
+            disabled={this.state.search.trim() !== '' ? false : true}
+            > searcs </Button>
           </form>
         </div>
+        {/*Here we just added our error handler in our view*/}
+        {this.state.error !== undefined ? <h1>{this.state.error}</h1> : false}
         {this.state.anime.map((a) => (
-          <Display title={a.title} key={a.mal_id} id={a.mal_id} />
+          <Display title={a.title} 
+          key={a.mal_id} id={a.mal_id}
+          img={a.image_url}
+          epsd={a.episodes}
+          rated={a.rated}
+          score={a.score}
+          synopsis={a.synopsis}
+          airing={a.airing}
+          end_date={a.end_date}
+          start_date={a.start_date}
+           />
         ))}
       </div>
     );
